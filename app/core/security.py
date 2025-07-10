@@ -10,8 +10,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             "default-src 'self'; "
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
             "font-src 'self' https://fonts.gstatic.com; "
-            "script-src 'self' 'unsafe-inline'; " # 'unsafe-inline' is required for Plotly charts
-            "img-src 'self' data:; "
+            "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com; "
+            "connect-src 'self' https://www.google-analytics.com https://analytics.google.com; "
+            "img-src 'self' data: https://www.google-analytics.com; "
             "object-src 'none'; "
             "frame-ancestors 'none'; "
             "base-uri 'self';"

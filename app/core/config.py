@@ -10,6 +10,8 @@ class Settings:
     DB_PORT: int = int(os.getenv("DB_PORT", "1234"))
     DB_NAME: str = os.getenv("DB_NAME", "db_name")
     
+    GOOGLE_ANALYTICS_ID: str = os.getenv("GOOGLE_ANALYTICS_ID", "G-0000000000")
+    
     @property
     def database_url(self) -> str:
         return f"mysql+pymysql://{self.DB_USER}:{self.DB_PASS}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"

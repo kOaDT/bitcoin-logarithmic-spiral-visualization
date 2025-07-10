@@ -9,6 +9,7 @@ from app.db.session import get_db
 from app.db.crud import get_prices
 from app.services.chart_generator import create_logarithmic_spiral_chart
 from app.services.statistics import calculate_statistics
+from app.core.config import settings
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -98,6 +99,7 @@ async def root(request: Request, days: Optional[int] = None, db: Session = Depen
             "json_ld_data": json.dumps(json_ld_data, indent=2),
             "chart_html_content": chart_html_content,
             "stats_html_content": stats_html_content,
+            "google_analytics_id": settings.GOOGLE_ANALYTICS_ID,
         }
         
         return templates.TemplateResponse("index.html", context)
