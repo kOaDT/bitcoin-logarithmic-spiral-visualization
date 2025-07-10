@@ -2,6 +2,10 @@
 
 A FastAPI application that generates interactive logarithmic spiral charts of Bitcoin price data.
 
+![Image](https://bitcoin-logarithmic-spiral-visualization.onrender.com/static/og-image.png)
+
+### [Live](https://bitcoin-logarithmic-spiral-visualization.onrender.com/)
+
 ## Prerequisites
 
 Before starting, ensure you have the following installed:
@@ -15,8 +19,8 @@ Before starting, ensure you have the following installed:
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/kOaDT/bitcoin-spiral-api.git
-cd bitcoin-spiral-api
+git clone https://github.com/kOaDT/bitcoin-logarithmic-spiral-visualization.git
+cd bitcoin-logarithmic-spiral-visualization
 ```
 
 ### 2. Create Virtual Environment
@@ -133,16 +137,6 @@ The application will be available at: **http://localhost:8000**
 | `id` | INT | Primary key, auto-increment |
 | `price` | DECIMAL(20,8) | Bitcoin price in USD |
 | `dateAdd` | DATETIME | Timestamp of price record |
-
-## Data Import
-
-### Real-time Data Integration
-
-To continuously update Bitcoin prices, you can:
-
-1. **Use a cron job** to fetch data from cryptocurrency APIs
-2. **Connect to WebSocket streams** for real-time updates
-3. **Import CSV files** with historical data
 
 ## Contributing
 

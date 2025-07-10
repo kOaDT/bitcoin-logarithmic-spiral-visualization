@@ -11,6 +11,14 @@ function refreshChart() {
 }
 
 /**
+ * Check if the device is mobile
+ * @returns {boolean} - True if the device is mobile, false otherwise
+ */
+function isMobile() {
+    return window.innerWidth <= 768 || 'ontouchstart' in window;
+}
+
+/**
  * Drag and drop functionality for chart panning
  */
 class ChartDragHandler {
@@ -19,6 +27,10 @@ class ChartDragHandler {
         this.startPos = { x: 0, y: 0 };
         this.currentTransform = { x: 0, y: 0 };
         this.scale = 1;
+        this.maxTranslate = 500;
+        this.mobileSensitivity = 0.7;
+        this.lastTapTime = 0;
+        this.tapTimeout = null;
         this.initializeEventListeners();
     }
     
@@ -37,9 +49,9 @@ class ChartDragHandler {
         document.addEventListener('mouseup', this.handleEnd.bind(this));
         
         // Touch events for mobile
-        mainContent.addEventListener('touchstart', this.handleStart.bind(this), { passive: false });
+        mainContent.addEventListener('touchstart', this.handleTouchStart.bind(this), { passive: false });
         document.addEventListener('touchmove', this.handleMove.bind(this), { passive: false });
-        document.addEventListener('touchend', this.handleEnd.bind(this));
+        document.addEventListener('touchend', this.handleTouchEnd.bind(this));
         
         // Wheel event for zooming
         mainContent.addEventListener('wheel', this.handleWheel.bind(this), { passive: false });
@@ -57,13 +69,34 @@ class ChartDragHandler {
         if (!e) return { x: 0, y: 0 };
         
         const rect = document.getElementById('mainContent').getBoundingClientRect();
-        const clientX = e.clientX || (e.touches && e.touches[0] && e.touches[0].clientX) || 0;
-        const clientY = e.clientY || (e.touches && e.touches[0] && e.touches[0].clientY) || 0;
+        let clientX, clientY;
+        
+        if (e.touches && e.touches.length > 0) {
+            clientX = e.touches[0].clientX;
+            clientY = e.touches[0].clientY;
+        } else if (e.changedTouches && e.changedTouches.length > 0) {
+            clientX = e.changedTouches[0].clientX;
+            clientY = e.changedTouches[0].clientY;
+        } else {
+            clientX = e.clientX || 0;
+            clientY = e.clientY || 0;
+        }
         
         return {
             x: clientX - rect.left,
             y: clientY - rect.top
         };
+    }
+    
+    /**
+     * Clamp a value between min and max
+     * @param {number} value - The value to clamp
+     * @param {number} min - The minimum value
+     * @param {number} max - The maximum value
+     * @returns {number} - The clamped value
+     */
+    clamp(value, min, max) {
+        return Math.min(Math.max(value, min), max);
     }
     
     /**
@@ -81,6 +114,35 @@ class ChartDragHandler {
     }
     
     /**
+     * Handle touch start with double-tap detection
+     * @param {Event} e - The event
+     */
+    handleTouchStart(e) {
+        if (e.target.closest('.floating-panel')) return;
+        
+        const currentTime = new Date().getTime();
+        const timeDiff = currentTime - this.lastTapTime;
+        
+        if (timeDiff < 300 && timeDiff > 0) {
+            this.resetTransform();
+            e.preventDefault();
+            return;
+        }
+        
+        this.lastTapTime = currentTime;
+        
+        if (this.tapTimeout) {
+            clearTimeout(this.tapTimeout);
+        }
+        
+        this.tapTimeout = setTimeout(() => {
+            this.handleStart(e);
+        }, 300);
+        
+        e.preventDefault();
+    }
+    
+    /**
      * Handle the move of the drag
      * @param {Event} e - The event
      */
@@ -88,14 +150,40 @@ class ChartDragHandler {
         if (!this.isDragging) return;
         
         const currentPos = this.getEventPos(e);
-        const deltaX = currentPos.x - this.startPos.x;
-        const deltaY = currentPos.y - this.startPos.y;
+        let deltaX = currentPos.x - this.startPos.x;
+        let deltaY = currentPos.y - this.startPos.y;
         
-        const newTransformX = this.currentTransform.x + deltaX;
-        const newTransformY = this.currentTransform.y + deltaY;
+        if (isMobile()) {
+            deltaX *= this.mobileSensitivity;
+            deltaY *= this.mobileSensitivity;
+        }
+        
+        const newTransformX = this.clamp(
+            this.currentTransform.x + deltaX,
+            -this.maxTranslate,
+            this.maxTranslate
+        );
+        const newTransformY = this.clamp(
+            this.currentTransform.y + deltaY,
+            -this.maxTranslate,
+            this.maxTranslate
+        );
         
         this.applyTransform(newTransformX, newTransformY, this.scale);
         e.preventDefault();
+    }
+    
+    /**
+     * Handle touch end
+     * @param {Event} e - The event
+     */
+    handleTouchEnd(e) {
+        if (this.tapTimeout && !this.isDragging) {
+            clearTimeout(this.tapTimeout);
+            this.tapTimeout = null;
+        }
+        
+        this.handleEnd(e);
     }
     
     /**
@@ -109,11 +197,24 @@ class ChartDragHandler {
         
         if (e) {
             const currentPos = this.getEventPos(e);
-            const deltaX = currentPos.x - this.startPos.x;
-            const deltaY = currentPos.y - this.startPos.y;
+            let deltaX = currentPos.x - this.startPos.x;
+            let deltaY = currentPos.y - this.startPos.y;
             
-            this.currentTransform.x += deltaX;
-            this.currentTransform.y += deltaY;
+            if (isMobile()) {
+                deltaX *= this.mobileSensitivity;
+                deltaY *= this.mobileSensitivity;
+            }
+            
+            this.currentTransform.x = this.clamp(
+                this.currentTransform.x + deltaX,
+                -this.maxTranslate,
+                this.maxTranslate
+            );
+            this.currentTransform.y = this.clamp(
+                this.currentTransform.y + deltaY,
+                -this.maxTranslate,
+                this.maxTranslate
+            );
         }
         
         document.getElementById('mainContent').classList.remove('dragging');
@@ -137,8 +238,8 @@ class ChartDragHandler {
         const newTransformX = mouseX - (mouseX - this.currentTransform.x) * deltaScale;
         const newTransformY = mouseY - (mouseY - this.currentTransform.y) * deltaScale;
         
-        this.currentTransform.x = newTransformX;
-        this.currentTransform.y = newTransformY;
+        this.currentTransform.x = this.clamp(newTransformX, -this.maxTranslate, this.maxTranslate);
+        this.currentTransform.y = this.clamp(newTransformY, -this.maxTranslate, this.maxTranslate);
         this.scale = newScale;
         
         this.applyTransform(this.currentTransform.x, this.currentTransform.y, this.scale);
@@ -180,7 +281,7 @@ class PanelManager {
      * Initialize the panels
      */
     initializePanels() {        
-        if (!this.isMobile()) {
+        if (!isMobile()) {
             this.makePanelsDraggable();
         } else {
             this.initializeMobileBehavior();
@@ -194,7 +295,7 @@ class PanelManager {
         this.updateMobileNavStates();
         
         document.addEventListener('click', (e) => {
-            if (this.isMobile() && this.activeMobilePanel) {
+            if (isMobile() && this.activeMobilePanel) {
                 const panel = document.getElementById(this.activeMobilePanel);
                 const navItems = document.querySelectorAll('.nav-item');
                 
@@ -293,14 +394,6 @@ class PanelManager {
             }
         });
     }
-    
-    /**
-     * Check if the device is mobile
-     * @returns {boolean} - True if the device is mobile, false otherwise
-     */
-    isMobile() {
-        return window.innerWidth <= 768;
-    }
 }
 
 /**
@@ -308,7 +401,7 @@ class PanelManager {
  * @param {string} panelId - The id of the panel
  */
 function toggleMobilePanel(panelId) {
-    if (!window.panelManager || !window.panelManager.isMobile()) return;
+    if (!window.panelManager || !isMobile()) return;
     
     const panel = document.getElementById(panelId);
     const overlay = document.getElementById('mobileOverlay');
@@ -335,7 +428,7 @@ function toggleMobilePanel(panelId) {
  * @param {string} panelId - The id of the panel
  */
 function closeMobilePanel(panelId) {
-    if (!window.panelManager || !window.panelManager.isMobile()) return;
+    if (!window.panelManager || !isMobile()) return;
     
     const panel = document.getElementById(panelId);
     if (!panel) return;
@@ -359,7 +452,7 @@ function closeMobilePanel(panelId) {
  * Close all mobile panels
  */
 function closeAllMobilePanels() {
-    if (!window.panelManager || !window.panelManager.isMobile()) return;
+    if (!window.panelManager || !isMobile()) return;
     
     const panels = document.querySelectorAll('.floating-panel');
     const overlay = document.getElementById('mobileOverlay');
@@ -387,7 +480,7 @@ function initializeKeyboardShortcuts() {
             e.preventDefault();
             window.chartDragHandler.resetTransform();
         }
-        if (e.key === 'Escape' && window.panelManager && window.panelManager.isMobile()) {
+        if (e.key === 'Escape' && window.panelManager && isMobile()) {
             closeAllMobilePanels();
         }
     });
@@ -413,7 +506,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeKeyboardShortcuts();
     
     window.addEventListener('resize', () => {
-        if (!window.panelManager.isMobile()) {
+        if (!isMobile()) {
             closeAllMobilePanels();
         }
     });
