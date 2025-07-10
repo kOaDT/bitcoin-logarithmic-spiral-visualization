@@ -1,0 +1,21 @@
+{
+    "name": "Bitcoin Logarithmic Spiral",
+    "short_name": "BTC Spiral",
+    "description": "A web application to visualize the Bitcoin price history on a logarithmic spiral chart.",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#0f0f0f",
+    "theme_color": "#0f0f0f",
+    "icons": [
+        {
+            "src": "/static/og-image.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "/static/og-image.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+} 
