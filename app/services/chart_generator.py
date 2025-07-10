@@ -239,7 +239,7 @@ def create_logarithmic_spiral_chart(prices: List[BitcoinPrice]) -> str:
             )
         )
         
-        return fig.to_html(
+        html_output = fig.to_html(
             include_plotlyjs=True,
             full_html=False,
             config={
@@ -257,6 +257,48 @@ def create_logarithmic_spiral_chart(prices: List[BitcoinPrice]) -> str:
             default_height='90vh',
             default_width='100vw'
         )
+        
+        mobile_css = """
+        <style>
+        @media (max-width: 768px) {
+            .legend {
+                display: none !important;
+            }
+            .plotly .legend {
+                display: none !important;
+            }
+            .js-plotly-plot .plotly .legend {
+                display: none !important;
+            }
+        }
+        </style>
+        <script>
+        // Additional JavaScript to hide legend on mobile
+        document.addEventListener('DOMContentLoaded', function() {
+            function hideLegendOnMobile() {
+                if (window.innerWidth <= 768) {
+                    const plotlyDiv = document.querySelector('.js-plotly-plot');
+                    if (plotlyDiv) {
+                        Plotly.relayout(plotlyDiv, {'showlegend': false});
+                    }
+                } else {
+                    const plotlyDiv = document.querySelector('.js-plotly-plot');
+                    if (plotlyDiv) {
+                        Plotly.relayout(plotlyDiv, {'showlegend': true});
+                    }
+                }
+            }
+            
+            // Initial check
+            hideLegendOnMobile();
+            
+            // Check on window resize
+            window.addEventListener('resize', hideLegendOnMobile);
+        });
+        </script>
+        """
+        
+        return mobile_css + html_output
     except Exception as e:
         logging.error(f"Error creating chart: {e}")
         return f"<h2>Error generating chart: {html.escape(str(e))}</h2>" 
