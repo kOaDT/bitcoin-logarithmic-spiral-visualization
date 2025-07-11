@@ -83,9 +83,8 @@ def create_logarithmic_spiral_chart(prices: List[BitcoinPrice]) -> str:
         r_ticks = [np.log10(v) for v in usd_ticks if v <= price_for_log.max() * 1.5]
         r_tick_labels = [f"{v:,}" for i, v in enumerate(usd_ticks) if i < len(r_ticks)]
 
-        last_year = end_date.year
-        year_tick_labels = [str(last_year - i) for i in range(4)]
-        year_angles = [i * (360 / 4) for i in range(4)] # Quarterly labels
+        year_tick_labels = ['2025', '2022', '2023', '2024']
+        year_angles = [0, 90, 180, 270]
 
         hover_texts = []
         for d, p in zip(dates, price_values):
